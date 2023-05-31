@@ -1,0 +1,9 @@
+/**
+ * 
+ */
+/**
+ * @author jesusmarin
+ *
+ */
+module MyBlazeTest {
+}
