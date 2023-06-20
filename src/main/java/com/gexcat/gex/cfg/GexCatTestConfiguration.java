@@ -7,6 +7,7 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.TimeUnit;
 
+import javax.persistence.EntityManagerFactory;
 import javax.sql.DataSource;
 
 import org.hibernate.boot.registry.StandardServiceRegistry;
@@ -15,9 +16,12 @@ import org.hibernate.cfg.AvailableSettings;
 import org.hibernate.engine.jdbc.internal.FormatStyle;
 import org.hibernate.engine.jdbc.internal.Formatter;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.context.annotation.PropertySource;
+import org.springframework.context.annotation.Scope;
 import org.springframework.dao.annotation.PersistenceExceptionTranslationPostProcessor;
 import org.springframework.data.domain.AuditorAware;
 import org.springframework.data.jpa.repository.config.EnableJpaAuditing;
@@ -34,8 +38,10 @@ import org.springframework.transaction.annotation.EnableTransactionManagement;
 import com.blazebit.persistence.Criteria;
 import com.blazebit.persistence.CriteriaBuilderFactory;
 import com.blazebit.persistence.integration.view.spring.EnableEntityViews;
+import com.blazebit.persistence.spi.CriteriaBuilderConfiguration;
 import com.blazebit.persistence.view.EntityViewManager;
 import com.blazebit.persistence.view.EntityViews;
+import com.blazebit.persistence.view.spi.EntityViewConfiguration;
 import com.gexcat.gex.AuditorAwareImpl;
 
 import net.ttddyy.dsproxy.listener.logging.DefaultQueryLogEntryCreator;
@@ -258,24 +264,46 @@ public class GexCatTestConfiguration
      * @return
      * @throws SQLException
      */
+//    @Bean
+//    @Scope(ConfigurableBeanFactory.SCOPE_SINGLETON)
+//    @Lazy(false)
+//    public CriteriaBuilderFactory createCriteriaBuilderFactory()
+//        throws SQLException {
+//        final var config = Criteria.getDefault();
+//        return config.createCriteriaBuilderFactory(entityManagerFactory().getNativeEntityManagerFactory());
+//    }
+//
+//    @Bean
+//    @Scope(ConfigurableBeanFactory.SCOPE_SINGLETON)
+//    @Lazy(false)
+//    public EntityViewManager createEntityViewManager()
+//        throws SQLException, ClassNotFoundException, URISyntaxException {
+//        final var cfg = EntityViews.createDefaultConfiguration();
+////        for (final var e : FileMisc.scanResources("/com/gexcat/gex/repository/view", "", false)) {
+////            final var clazz = Class.forName(e.replace("/", ".").replace(".com", "com").replace(".class", ""));
+////            cfg.addEntityView(clazz);
+////        }
+//        EntityViewManager evm = cfg.createEntityViewManager(createCriteriaBuilderFactory());
+//        return evm;
+////        return cfg.createEntityViewManager(createCriteriaBuilderFactory());
+//    }
     @Bean
-    public CriteriaBuilderFactory createCriteriaBuilderFactory()
-        throws SQLException {
-        final var config = Criteria.getDefault();
-        return config.createCriteriaBuilderFactory(entityManagerFactory().getNativeEntityManagerFactory());
+    @Scope(ConfigurableBeanFactory.SCOPE_SINGLETON)
+    @Lazy(false)
+    public CriteriaBuilderFactory createCriteriaBuilderFactory(EntityManagerFactory entityManagerFactory) {
+        var config = Criteria.getDefault();
+        // do some configuration
+        return config.createCriteriaBuilderFactory(entityManagerFactory);
     }
 
     @Bean
-    public EntityViewManager createEntityViewManager()
-        throws SQLException, ClassNotFoundException, URISyntaxException {
-        final var cfg = EntityViews.createDefaultConfiguration();
-//        for (final var e : FileMisc.scanResources("/com/gexcat/gex/repository/view", "", false)) {
-//            final var clazz = Class.forName(e.replace("/", ".").replace(".com", "com").replace(".class", ""));
-//            cfg.addEntityView(clazz);
-//        }
-        return cfg.createEntityViewManager(createCriteriaBuilderFactory());
+    @Scope(ConfigurableBeanFactory.SCOPE_SINGLETON)
+    @Lazy(false)
+    // inject the criteria builder factory which will be used along with the entity view manager
+    public EntityViewManager createEntityViewManager(CriteriaBuilderFactory cbf, EntityViewConfiguration entityViewConfiguration) {
+        var evm = entityViewConfiguration.createEntityViewManager(cbf);
+        return evm;
     }
-
     @Override
     protected String[] packagesToScan() {
         return new String[] { "com.gexcat.gex.jpa.entity", };
