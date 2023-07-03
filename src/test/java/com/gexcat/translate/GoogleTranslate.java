@@ -1,6 +1,8 @@
 package com.gexcat.translate;
 
 import com.google.gson.JsonElement;
+import com.google.gson.Gson;
+import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.google.gson.JsonSyntaxException;
@@ -10,6 +12,9 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.URL;
 import java.net.URLEncoder;
+import java.util.Map;
+import java.util.Set;
+
 import javax.net.ssl.HttpsURLConnection;
 
 /**
@@ -54,6 +59,8 @@ public class GoogleTranslate {
             }
 
             JsonElement element = JsonParser.parseString(result.toString());
+            JsonElement code = null;
+            JsonElement message = null;
 
             if (element.isJsonObject()) {
                 JsonObject obj = element.getAsJsonObject();
@@ -63,10 +70,13 @@ public class GoogleTranslate {
                     return translatedText;
 
                 }
+                code = obj.get("error").getAsJsonObject().get("code");
+                message = obj.get("error").getAsJsonObject().get("message");
             }
 
             if (conn.getResponseCode() != 200) {
                 System.err.println(result);
+                return "code=" + code + ", message=" + message;
             }
 
         } catch (IOException | JsonSyntaxException ex) {
@@ -79,7 +89,7 @@ public class GoogleTranslate {
     public static void main(String[] args) {
 
         GoogleTranslate translator = new GoogleTranslate("AIzaSyBBdgJb6Jl7Vk2NI9D-I9LAIeobkSM3Vms");
-        String text = translator.translte("How are you?. I am fine", "en", "es");
+        String text = translator.translte("How are you?. I am fine. Thanks!", "en", "ca");
         System.out.println(text);
     }
 }
